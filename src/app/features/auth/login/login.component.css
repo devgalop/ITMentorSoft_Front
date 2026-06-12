@@ -1,0 +1,59 @@
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  background: var(--color-white);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.login-card__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-card__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.login-card__subtitle {
+  font-size: 1rem;
+  color: var(--color-mid-1);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.login-form__server-error {
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, #e53e3e 8%, var(--color-white));
+  border: 1px solid #e53e3e;
+  border-radius: 0.5rem;
+  color: #c53030;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.5rem;
+  }
+
+  .login-card__title {
+    font-size: 1.5rem;
+  }
+}

@@ -1,0 +1,48 @@
+<div class="login-card">
+  <div class="login-card__header">
+    <h1 class="login-card__title">ITMentorSoft</h1>
+    <p class="login-card__subtitle">Iniciá sesión en tu cuenta</p>
+  </div>
+
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+    <app-form-field
+      label="Email"
+      forId="email"
+      [error]="getEmailError()"
+    >
+      <app-input
+        id="email"
+        type="email"
+        placeholder="tu@email.com"
+        [control]="loginForm.controls.email"
+      />
+    </app-form-field>
+
+    <app-form-field
+      label="Contraseña"
+      forId="password"
+      [error]="getPasswordError()"
+    >
+      <app-input
+        id="password"
+        type="password"
+        placeholder="Tu contraseña"
+        [control]="loginForm.controls.password"
+      />
+    </app-form-field>
+
+    @if (serverError()) {
+      <div class="login-form__server-error" role="alert">
+        {{ serverError() }}
+      </div>
+    }
+
+    <app-button
+      type="submit"
+      variant="primary"
+      [loading]="isLoading()"
+    >
+      Iniciar sesión
+    </app-button>
+  </form>
+</div>

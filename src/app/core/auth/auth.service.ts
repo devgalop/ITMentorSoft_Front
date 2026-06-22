@@ -2,7 +2,8 @@ import { Injectable, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { LoginCredentials, LoginResponse } from './auth.types';
+import { JwtService } from './jwt.service';
+import { AuthUser, LoginCredentials, LoginResponse } from './auth.types';
 import { environment } from '@env/environment';
 
 const TOKEN_KEY = 'auth_token';
@@ -12,12 +13,20 @@ export class AuthService {
   private readonly _token = signal<string | null>(sessionStorage.getItem(TOKEN_KEY));
   private readonly _isAuthenticated = computed(() => this._token() !== null);
 
+  private readonly _user = computed<AuthUser | null>(() => {
+    const token = this._token();
+    return token ? this.jwtService.decode(token) : null;
+  });
+
   readonly token = this._token.asReadonly();
   readonly isAuthenticated = this._isAuthenticated;
+  readonly user = this._user;
+  readonly role = computed<AuthUser['role'] | null>(() => this._user()?.role ?? null);
 
   constructor(
     private readonly http: HttpClient,
     private readonly router: Router,
+    private readonly jwtService: JwtService,
   ) {}
 
   async login(credentials: LoginCredentials): Promise<void> {
@@ -27,7 +36,6 @@ export class AuthService {
       );
       this._token.set(response.token);
       sessionStorage.setItem(TOKEN_KEY, response.token);
-      await this.router.navigate(['/']);
     } catch (error) {
       throw this.mapHttpError(error);
     }
@@ -43,11 +51,7 @@ export class AuthService {
   private clearAllCookies(): void {
     const cookies = document.cookie.split(';');
     const paths = ['/', '/users', '/api'];
-    const domains = [
-      '',
-      `.${location.hostname}`,
-      location.hostname,
-    ];
+    const domains = ['', `.${location.hostname}`, location.hostname];
 
     for (const cookie of cookies) {
       const name = cookie.split('=')[0]?.trim();

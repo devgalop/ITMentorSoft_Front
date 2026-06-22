@@ -1,10 +1,11 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
+import { JwtService } from './jwt.service';
 import { LoginResponse } from './auth.types';
 
 describe('AuthService', () => {
@@ -15,9 +16,12 @@ describe('AuthService', () => {
   const apiUrl = '';
   const sessionUrl = `${apiUrl}/users/sessions`;
 
+  const VALID_STUDENT_TOKEN =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiJlaWRlcl90ZXN0Iiwicm9sZSI6InN0dWRlbnQiLCJleHAiOjE3ODIxMDY5OTV9.C29WG-n07km4acqGC5yyh_GOTLFM03cbdYeZ7Y-T5pM';
+
   const mockResponse: LoginResponse = {
     is_successful: true,
-    token: 'test-token-123',
+    token: VALID_STUDENT_TOKEN,
     expiration_time: 1700000000,
     refresh_token: 'refresh-token-456',
   };
@@ -33,6 +37,7 @@ describe('AuthService', () => {
       imports: [HttpClientTestingModule],
       providers: [
         AuthService,
+        JwtService,
         {
           provide: Router,
           useValue: { navigate: vi.fn() },
@@ -57,7 +62,7 @@ describe('AuthService', () => {
     req.flush(mockResponse);
 
     await loginPromise;
-    expect(sessionStorage.getItem('auth_token')).toBe('test-token-123');
+    expect(sessionStorage.getItem('auth_token')).toBe(VALID_STUDENT_TOKEN);
   });
 
   it('login() stores token in sessionStorage and updates isAuthenticated on success', async () => {
@@ -69,7 +74,17 @@ describe('AuthService', () => {
 
     await loginPromise;
     expect(service.isAuthenticated()).toBe(true);
-    expect(service.token()).toBe('test-token-123');
+    expect(service.token()).toBe(VALID_STUDENT_TOKEN);
+  });
+
+  it('login() exposes decoded user and role from the JWT', async () => {
+    const loginPromise = service.login(validCredentials);
+    const req = httpMock.expectOne(sessionUrl);
+    req.flush(mockResponse);
+
+    await loginPromise;
+    expect(service.role()).toBe('student');
+    expect(service.user()).toEqual({ userName: 'eider_test', role: 'student' });
   });
 
   it('login() throws error with mapped message on 401', async () => {
@@ -92,20 +107,19 @@ describe('AuthService', () => {
   });
 
   it('logout() clears sessionStorage and resets signals', async () => {
-    // First login
     const loginPromise = service.login(validCredentials);
     const req = httpMock.expectOne(sessionUrl);
     req.flush(mockResponse);
     await loginPromise;
 
     expect(service.isAuthenticated()).toBe(true);
-    expect(sessionStorage.getItem('auth_token')).toBe('test-token-123');
+    expect(sessionStorage.getItem('auth_token')).toBe(VALID_STUDENT_TOKEN);
 
-    // Then logout
     service.logout();
 
     expect(service.isAuthenticated()).toBe(false);
     expect(sessionStorage.getItem('auth_token')).toBeNull();
+    expect(service.role()).toBeNull();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 });

@@ -1,3 +1,5 @@
+export type UserRole = 'admin' | 'teacher' | 'student' | 'user';
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -10,7 +12,13 @@ export interface LoginResponse {
   refresh_token: string;
 }
 
+export interface JwtPayload {
+  user_name: string;
+  role: UserRole;
+  exp: number;
+}
+
 export interface AuthUser {
-  id: string;
-  email: string;
+  userName: string;
+  role: UserRole;
 }

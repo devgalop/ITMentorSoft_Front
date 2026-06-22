@@ -1,14 +1,41 @@
 import { JwtService } from './jwt.service';
 
+function base64UrlEncode(obj: object): string {
+  const json = JSON.stringify(obj);
+  const base64 = btoa(json);
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function buildFakeJwt(payload: object): string {
+  const header = base64UrlEncode({ alg: 'HS256', typ: 'JWT' });
+  const body = base64UrlEncode(payload);
+  const fakeSignature = 'fake-signature';
+  return `${header}.${body}.${fakeSignature}`;
+}
+
 describe('JwtService', () => {
   let service: JwtService;
 
-  const VALID_STUDENT_TOKEN =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiJlaWRlcl90ZXN0Iiwicm9sZSI6InN0dWRlbnQiLCJleHAiOjE3ODIxMDY5OTV9.C29WG-n07km4acqGC5yyh_GOTLFM03cbdYeZ7Y-T5pM';
-  const EXPIRED_TEACHER_TOKEN =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiJlaWRlcl90ZXN0Iiwicm9sZSI6InRlYWNoZXIiLCJleHAiOjE3ODIwOTk3OTV9.fx6xo71AbG1XPiwzaakcPvjoaKJ1aZTKjkAgB6IjaYs';
-  const ADMIN_TOKEN =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiJhZG1pbl90ZXN0Iiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzgyMTA2OTk1fQ.Ace80vhttUbQNjMBFAKYmhM4KcDpg6bwshffgO3r3uE';
+  const nowInSeconds = () => Math.floor(Date.now() / 1000);
+
+  const VALID_STUDENT_TOKEN = buildFakeJwt({
+    user_name: 'eider_test',
+    role: 'student',
+    exp: nowInSeconds() + 3600,
+  });
+
+  const EXPIRED_TEACHER_TOKEN = buildFakeJwt({
+    user_name: 'eider_test',
+    role: 'teacher',
+    exp: nowInSeconds() - 3600,
+  });
+
+  const ADMIN_TOKEN = buildFakeJwt({
+    user_name: 'admin_test',
+    role: 'admin',
+    exp: nowInSeconds() + 3600,
+  });
+
   const MALFORMED_TOKEN = 'not-a-real-jwt';
 
   beforeEach(() => {

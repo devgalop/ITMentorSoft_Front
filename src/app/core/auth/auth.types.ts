@@ -12,6 +12,18 @@ export interface LoginResponse {
   refresh_token: string;
 }
 
+export interface RegisterCredentials {
+  email: string;
+  username: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  is_success: boolean;
+  message: string;
+  user_id: string | null;
+}
+
 export interface JwtPayload {
   user_name: string;
   role: UserRole;

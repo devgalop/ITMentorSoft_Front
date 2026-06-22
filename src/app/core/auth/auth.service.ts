@@ -3,7 +3,13 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { JwtService } from './jwt.service';
-import { AuthUser, LoginCredentials, LoginResponse } from './auth.types';
+import {
+  AuthUser,
+  LoginCredentials,
+  LoginResponse,
+  RegisterCredentials,
+  RegisterResponse,
+} from './auth.types';
 import { environment } from '@env/environment';
 
 const TOKEN_KEY = 'auth_token';
@@ -41,6 +47,16 @@ export class AuthService {
     }
   }
 
+  async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<RegisterResponse>(`${environment.apiUrl}/users/`, credentials),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   logout(): void {
     this._token.set(null);
     sessionStorage.removeItem(TOKEN_KEY);
@@ -70,14 +86,32 @@ export class AuthService {
       switch (error.status) {
         case 0:
           return new Error('Sin conexión al servidor');
+        case 400:
+          return new Error(this.extractBusinessErrorMessage(error) ?? 'Solicitud inválida');
         case 401:
           return new Error('Credenciales inválidas');
         case 403:
           return new Error('Acceso denegado');
+        case 422:
+          return new Error(this.extractValidationMessage(error) ?? 'Datos inválidos');
         default:
           return new Error('Error en el servidor, intentá más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');
+  }
+
+  private extractValidationMessage(error: HttpErrorResponse): string | null {
+    const detail = error.error?.detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      const rawMsg: string | undefined = detail[0]?.msg;
+      return rawMsg?.replace('Value error, ', '') ?? null;
+    }
+    return null;
+  }
+
+  private extractBusinessErrorMessage(error: HttpErrorResponse): string | null {
+    const message = error.error?.detail?.message?.message;
+    return typeof message === 'string' ? message : null;
   }
 }

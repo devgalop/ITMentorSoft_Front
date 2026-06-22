@@ -122,4 +122,68 @@ describe('AuthService', () => {
     expect(service.role()).toBeNull();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  describe('register', () => {
+    const validRegisterCredentials = {
+      email: 'nuevo@example.com',
+      username: 'nuevo_user',
+      password: 'Password123!',
+    };
+    const registerUrl = `${apiUrl}/users/`;
+
+    it('sends POST to /users/ with correct payload and returns success response', async () => {
+      const mockRegisterResponse = {
+        is_success: true,
+        message: 'User created successfully',
+        user_id: 'abc123',
+      };
+
+      const registerPromise = service.register(validRegisterCredentials);
+
+      const req = httpMock.expectOne(registerUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(validRegisterCredentials);
+      req.flush(mockRegisterResponse, { status: 201, statusText: 'Created' });
+
+      const result = await registerPromise;
+      expect(result).toEqual(mockRegisterResponse);
+    });
+
+    it('throws business error message on 400 duplicate email', async () => {
+      const registerPromise = service.register(validRegisterCredentials);
+
+      const req = httpMock.expectOne(registerUrl);
+      req.flush(
+        { detail: { message: { is_success: false, message: 'Email already in use', user_id: null } } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+      await expect(registerPromise).rejects.toThrow('Email already in use');
+    });
+
+    it('throws validation error message on 422 invalid password', async () => {
+      const registerPromise = service.register(validRegisterCredentials);
+
+      const req = httpMock.expectOne(registerUrl);
+      req.flush(
+        {
+          detail: [
+            { type: 'value_error', loc: ['body', 'password'], msg: 'Value error, Password must be at least 6 characters long' },
+          ],
+        },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+
+      await expect(registerPromise).rejects.toThrow('Password must be at least 6 characters long');
+    });
+
+    it('throws connection error message on network error', async () => {
+      const registerPromise = service.register(validRegisterCredentials);
+
+      const req = httpMock.expectOne(registerUrl);
+      req.error(new ProgressEvent('Network error'));
+
+      await expect(registerPromise).rejects.toThrow('Sin conexión al servidor');
+    });
+  });
 });

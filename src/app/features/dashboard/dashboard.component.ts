@@ -1,17 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '@shared/ui/sidebar/sidebar.component';
 import { SidebarService } from '@shared/ui/sidebar/sidebar.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [SidebarComponent],
+  imports: [SidebarComponent, RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dashboard-layout">
       <app-sidebar />
       <main class="dashboard-content" [class.dashboard-content--collapsed]="isCollapsed()">
-        <ng-content />
+        <router-outlet />
       </main>
     </div>
   `,

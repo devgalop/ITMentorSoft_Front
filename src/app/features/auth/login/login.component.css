@@ -194,6 +194,20 @@
   color: var(--color-mid-2);
 }
 
+.login-form__register-link {
+  text-align: center;
+  margin-top: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--color-mid-2);
+}
+
+.login-form__register-link a {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 /* ===== RESPONSIVE: desktop split-screen ===== */
 @media (min-width: 768px) {
   .login-page {

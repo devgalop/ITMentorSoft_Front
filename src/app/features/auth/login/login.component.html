@@ -24,17 +24,17 @@
       </div>
 
       <div class="login-hero__tagline">
-        <span>Aprende · Piensa · Crea el futuro</span>
+        <span>Aprende &middot; Piensa &middot; Crea el futuro</span>
       </div>
 
-      <h1 class="login-hero__title">Tu tutor inteligente de ingeniería de software</h1>
+      <h1 class="login-hero__title">Tu tutor inteligente de ingenier&iacute;a de software</h1>
       <p class="login-hero__subtitle">
-        Diagnóstico adaptativo con IA, categorización automática y rutas de aprendizaje
+        Diagn&oacute;stico adaptativo con IA, categorizaci&oacute;n autom&aacute;tica y rutas de aprendizaje
         personalizadas.
       </p>
 
       <ul class="login-hero__features">
-        <li>Diagnóstico adaptativo basado en IA</li>
+        <li>Diagn&oacute;stico adaptativo basado en IA</li>
         <li>Rutas de aprendizaje personalizadas</li>
         <li>Seguimiento de progreso en tiempo real</li>
       </ul>
@@ -44,7 +44,7 @@
   <section class="login-form-panel">
     <div class="login-card">
       <h2 class="login-card__title">Bienvenido de vuelta</h2>
-      <p class="login-card__subtitle">Ingresá tus credenciales para continuar</p>
+      <p class="login-card__subtitle">Ingres&aacute; tus credenciales para continuar</p>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         <app-form-field label="Email" forId="email" [error]="getEmailError()">
@@ -56,14 +56,18 @@
           />
         </app-form-field>
 
-        <app-form-field label="Contraseña" forId="password" [error]="getPasswordError()">
+        <app-form-field label="Contrase&ntilde;a" forId="password" [error]="getPasswordError()">
           <app-input
             id="password"
             type="password"
-            placeholder="Tu contraseña"
+            placeholder="Tu contrase&ntilde;a"
             [control]="loginForm.controls.password"
           />
         </app-form-field>
+
+        <div class="login-form__forgot-link">
+          <a routerLink="/recover-password">&iquest;Olvidaste tu contrase&ntilde;a?</a>
+        </div>
 
         @if (serverError()) {
           <div class="login-form__server-error" role="alert">
@@ -72,16 +76,16 @@
         }
 
         <app-button type="submit" variant="primary" [loading]="isLoading()">
-          Iniciar sesión
+          Iniciar sesi&oacute;n
         </app-button>
       </form>
 
       <p class="login-card__footer">
-        <span>🔒</span> Tus datos están protegidos
+        <span>&#128274;</span> Tus datos est&aacute;n protegidos
       </p>
 
       <div class="login-form__register-link">
-        ¿No tienes cuenta? <a routerLink="/register">Regístrate gratis</a>
+        &iquest;No tienes cuenta? <a routerLink="/register">Registr&aacute;te gratis</a>
       </div>
     </div>
   </section>

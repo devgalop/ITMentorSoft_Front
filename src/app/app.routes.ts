@@ -14,6 +14,13 @@ export const routes: Routes = [
       import('@features/auth/register/register.component').then((m) => m.RegisterComponent),
   },
   {
+    path: 'recover-password',
+    loadComponent: () =>
+      import('@features/auth/recover-password/recover-password.component').then(
+        (m) => m.RecoverPasswordComponent,
+      ),
+  },
+  {
     path: 'student',
     canActivate: [authGuard, roleGuard('student')],
     loadChildren: () =>

@@ -186,4 +186,119 @@ describe('AuthService', () => {
       await expect(registerPromise).rejects.toThrow('Sin conexión al servidor');
     });
   });
+
+  describe('recoverPassword', () => {
+    const validRecoverCredentials = { email: 'eider@itmentorsoft.local' };
+    const recoverUrl = `${apiUrl}/users/recovery-password`;
+
+    it('sends POST to /users/recovery-password with correct payload', async () => {
+      const recoverPromise = service.recoverPassword(validRecoverCredentials);
+
+      const req = httpMock.expectOne(recoverUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(validRecoverCredentials);
+      req.flush({
+        message: 'If the email exists in our system, you will receive a password recovery email shortly.',
+      });
+
+      const result = await recoverPromise;
+      expect(result.message).toContain('password recovery email');
+    });
+
+    it('always returns the same generic message regardless of whether the email exists', async () => {
+      const recoverPromise = service.recoverPassword({ email: 'noexiste@itmentorsoft.local' });
+
+      const req = httpMock.expectOne(recoverUrl);
+      req.flush({
+        message: 'If the email exists in our system, you will receive a password recovery email shortly.',
+      });
+
+      const result = await recoverPromise;
+      expect(result.message).toBe(
+        'If the email exists in our system, you will receive a password recovery email shortly.',
+      );
+    });
+
+    it('throws validation error message on 422 invalid email format', async () => {
+      const recoverPromise = service.recoverPassword({ email: 'not-an-email' });
+
+      const req = httpMock.expectOne(recoverUrl);
+      req.flush(
+        {
+          detail: [
+            { type: 'value_error', loc: ['body', 'email'], msg: 'Value error, Invalid email format' },
+          ],
+        },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+
+      await expect(recoverPromise).rejects.toThrow('Invalid email format');
+    });
+
+    it('throws connection error message on network error', async () => {
+      const recoverPromise = service.recoverPassword(validRecoverCredentials);
+
+      const req = httpMock.expectOne(recoverUrl);
+      req.error(new ProgressEvent('Network error'));
+
+      await expect(recoverPromise).rejects.toThrow('Sin conexión al servidor');
+    });
+  });
+
+  describe('resetPassword', () => {
+    const validResetCredentials = {
+      token: 'plain-text-token-from-email',
+      id_trx: 'trx-abc-123',
+      new_password: 'NewPassword123!',
+    };
+    const resetUrl = `${apiUrl}/users/change-password`;
+
+    it('sends PUT to /users/change-password with correct payload', async () => {
+      const resetPromise = service.resetPassword(validResetCredentials);
+
+      const req = httpMock.expectOne(resetUrl);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(validResetCredentials);
+      req.flush({ is_success: true, message: 'Password changed successfully' });
+
+      const result = await resetPromise;
+      expect(result).toEqual({ is_success: true, message: 'Password changed successfully' });
+    });
+
+    it('returns is_success false with message when token is invalid or expired (200 OK)', async () => {
+      const resetPromise = service.resetPassword(validResetCredentials);
+
+      const req = httpMock.expectOne(resetUrl);
+      req.flush({ is_success: false, message: 'Invalid or expired token' });
+
+      const result = await resetPromise;
+      expect(result.is_success).toBe(false);
+      expect(result.message).toBe('Invalid or expired token');
+    });
+
+    it('throws validation error message on 422 invalid new_password', async () => {
+      const resetPromise = service.resetPassword(validResetCredentials);
+
+      const req = httpMock.expectOne(resetUrl);
+      req.flush(
+        {
+          detail: [
+            { type: 'value_error', loc: ['body', 'new_password'], msg: 'Value error, Password must be at least 6 characters long' },
+          ],
+        },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+
+      await expect(resetPromise).rejects.toThrow('Password must be at least 6 characters long');
+    });
+
+    it('throws connection error message on network error', async () => {
+      const resetPromise = service.resetPassword(validResetCredentials);
+
+      const req = httpMock.expectOne(resetUrl);
+      req.error(new ProgressEvent('Network error'));
+
+      await expect(resetPromise).rejects.toThrow('Sin conexión al servidor');
+    });
+  });
 });

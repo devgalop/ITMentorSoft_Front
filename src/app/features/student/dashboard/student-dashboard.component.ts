@@ -11,9 +11,15 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     </div>
   `,
   styles: `
-    .placeholder {
-      h1 { color: var(--color-primary); font-size: 1.5rem; font-weight: 800; }
-      p { color: var(--color-mid-2); margin-top: 0.5rem; }
+    .placeholder h1 {
+      color: var(--color-primary);
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .placeholder p {
+      color: var(--color-mid-2);
+      margin-top: 0.5rem;
     }
   `,
 })

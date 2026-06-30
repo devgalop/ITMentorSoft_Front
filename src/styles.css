@@ -1,0 +1,34 @@
+:root {
+  --color-primary: #0D2B6E;      /* navy */
+  --color-secondary: #1A3F8F;    /* navy-light */
+  --color-accent: #1ABCB0;       /* teal */
+  --color-accent-light: #22D4C7; /* teal-light */
+  --color-accent-pale: #E1F8F7;  /* teal-pale */
+
+  /* Escala de grises */
+  --color-mid-1: #4A5270;        /* g600 */
+  --color-mid-2: #9199B1;        /* g400 */
+  --color-light-1: #D8DCE8;      /* g200 */
+  --color-light-2: #EEF0F6;      /* g100 */
+  --color-light-3: #F8F9FC;      /* g50 */
+  --color-white: #FFFFFF;
+  --color-dark: #0F1527;         /* g900 */
+
+  /* Estados */
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-light-2);
+  color: var(--color-primary);
+}

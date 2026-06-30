@@ -7,8 +7,12 @@ import {
   AuthUser,
   LoginCredentials,
   LoginResponse,
+  RecoverPasswordCredentials,
+  RecoverPasswordResponse,
   RegisterCredentials,
   RegisterResponse,
+  ResetPasswordCredentials,
+  ResetPasswordResponse,
 } from './auth.types';
 import { environment } from '@env/environment';
 
@@ -51,6 +55,34 @@ export class AuthService {
     try {
       return await firstValueFrom(
         this.http.post<RegisterResponse>(`${environment.apiUrl}/users/`, credentials),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async recoverPassword(
+    credentials: RecoverPasswordCredentials,
+  ): Promise<RecoverPasswordResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<RecoverPasswordResponse>(
+          `${environment.apiUrl}/users/recovery-password`,
+          credentials,
+        ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async resetPassword(credentials: ResetPasswordCredentials): Promise<ResetPasswordResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<ResetPasswordResponse>(
+          `${environment.apiUrl}/users/change-password`,
+          credentials,
+        ),
       );
     } catch (error) {
       throw this.mapHttpError(error);

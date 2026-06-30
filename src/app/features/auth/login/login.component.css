@@ -177,6 +177,19 @@
   gap: 1.125rem;
 }
 
+.login-form__forgot-link {
+  text-align: right;
+  margin-top: -0.5rem;
+}
+
+.login-form__forgot-link a {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .login-form__server-error {
   padding: 0.75rem 1rem;
   background: color-mix(in srgb, var(--color-error) 8%, var(--color-white));

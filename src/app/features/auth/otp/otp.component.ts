@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
@@ -23,8 +24,7 @@ export class OtpComponent {
   readonly otpForm = new FormGroup({
     otp: new FormControl('', [
       Validators.required,
-      Validators.minLength(4),
-      Validators.maxLength(10),
+      Validators.pattern(/^[0-9A-F]{6}$/),
     ]),
   });
 
@@ -33,6 +33,13 @@ export class OtpComponent {
     if (!this.authService.pendingOtpUserId()) {
       void this.router.navigate(['/login']);
     }
+    // El OTP es hexadecimal en mayúscula: normalizamos lo que se escribe.
+    this.otpControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+      const upper = (value ?? '').toUpperCase();
+      if (upper !== value) {
+        this.otpControl.setValue(upper, { emitEvent: false });
+      }
+    });
   }
 
   get otpControl(): FormControl {
@@ -43,7 +50,7 @@ export class OtpComponent {
     const ctrl = this.otpControl;
     if (!ctrl.touched) return null;
     if (ctrl.hasError('required')) return 'Ingresá el código';
-    if (ctrl.hasError('minlength') || ctrl.hasError('maxlength')) return 'Código inválido';
+    if (ctrl.hasError('pattern')) return 'El código son 6 caracteres (0-9, A-F)';
     return null;
   }
 

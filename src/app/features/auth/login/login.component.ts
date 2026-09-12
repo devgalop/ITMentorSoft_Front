@@ -78,8 +78,29 @@ export class LoginComponent {
     this.loginForm.disable();
 
     try {
-      await this.authService.login({ email: email!, password: password! });
-      await this.redirectByRole();
+      const response = await this.authService.login({ email: email!, password: password! });
+
+      if (response.is_definitively_blocked) {
+        this.toast.error(
+          'Cuenta bloqueada',
+          'Tu cuenta fue bloqueada por seguridad. Contactá al administrador.',
+        );
+        return;
+      }
+      if (response.is_temporarily_blocked) {
+        this.toast.error(
+          'Cuenta bloqueada temporalmente',
+          'Demasiados intentos. Esperá unos minutos e intentá de nuevo.',
+        );
+        return;
+      }
+      if (response.is_successful && response.user_id) {
+        this.toast.info('Verificá tu correo', 'Te enviamos un código para completar el ingreso.');
+        await this.router.navigate(['/otp']);
+        return;
+      }
+
+      this.toast.error('No se pudo iniciar sesión', 'Revisá tus credenciales e intentá de nuevo.');
     } catch (error) {
       this.toast.error(
         'No se pudo iniciar sesión',
@@ -88,22 +109,6 @@ export class LoginComponent {
     } finally {
       this.isLoading.set(false);
       this.loginForm.enable();
-    }
-  }
-
-  private async redirectByRole(): Promise<void> {
-    switch (this.authService.role()) {
-      case 'admin':
-        await this.router.navigate(['/admin']);
-        break;
-      case 'teacher':
-        await this.router.navigate(['/teacher']);
-        break;
-      case 'student':
-        await this.router.navigate(['/student']);
-        break;
-      default:
-        await this.router.navigate(['/']);
     }
   }
 }

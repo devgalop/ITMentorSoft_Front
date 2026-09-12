@@ -5,6 +5,8 @@ import { firstValueFrom } from 'rxjs';
 import { JwtService } from './jwt.service';
 import {
   AuthUser,
+  ConfirmOtpResponse,
+  RefreshResponse,
   LoginCredentials,
   LoginResponse,
   RecoverPasswordCredentials,
@@ -21,6 +23,7 @@ const TOKEN_KEY = 'auth_token';
 const USER_ID_KEY = 'auth_user_id';
 const REFRESH_KEY = 'auth_refresh_token';
 const USERNAME_KEY = 'auth_user_name';
+const PENDING_OTP_KEY = 'auth_pending_otp_user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -28,6 +31,10 @@ export class AuthService {
   private readonly _userId = signal<string | null>(sessionStorage.getItem(USER_ID_KEY));
   private readonly _refreshToken = signal<string | null>(sessionStorage.getItem(REFRESH_KEY));
   private readonly _userName = signal<string | null>(sessionStorage.getItem(USERNAME_KEY));
+  /** user_id que quedó pendiente de validar OTP tras el login (paso 1). */
+  private readonly _pendingOtpUserId = signal<string | null>(
+    sessionStorage.getItem(PENDING_OTP_KEY),
+  );
   private readonly _isAuthenticated = computed(() => this._token() !== null);
 
   private readonly _user = computed<AuthUser | null>(() => {
@@ -40,6 +47,7 @@ export class AuthService {
   readonly isAuthenticated = this._isAuthenticated;
   readonly user = this._user;
   readonly role = computed<AuthUser['role'] | null>(() => this._user()?.role ?? null);
+  readonly pendingOtpUserId = this._pendingOtpUserId.asReadonly();
 
   constructor(
     private readonly http: HttpClient,
@@ -47,30 +55,82 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(credentials: LoginCredentials): Promise<void> {
+  /**
+   * Paso 1 del login: valida email/password. NO devuelve token todavía —
+   * el backend envía un OTP por correo. Guarda el user_id pendiente para el
+   * paso 2 (validar OTP). Devuelve la respuesta (incluye estados de bloqueo).
+   */
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
       const response = await firstValueFrom(
         this.http.post<LoginResponse>(`${environment.apiUrl}${ENDPOINTS.users.sessions}`, credentials, {
           withCredentials: true,
         }),
       );
-      this._token.set(response.token);
-      sessionStorage.setItem(TOKEN_KEY, response.token);
-      if (response.user_id) {
-        this._userId.set(response.user_id);
-        sessionStorage.setItem(USER_ID_KEY, response.user_id);
+      if (response.is_successful && response.user_id) {
+        this._pendingOtpUserId.set(response.user_id);
+        sessionStorage.setItem(PENDING_OTP_KEY, response.user_id);
       }
-      if (response.refresh_token) {
-        this._refreshToken.set(response.refresh_token);
-        sessionStorage.setItem(REFRESH_KEY, response.refresh_token);
-      }
-      const decoded = this.jwtService.decode(response.token);
-      if (decoded?.userName) {
-        this._userName.set(decoded.userName);
-        sessionStorage.setItem(USERNAME_KEY, decoded.userName);
-      }
+      return response;
     } catch (error) {
       throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Paso 2 del login: valida el OTP. Si es correcto, el backend devuelve el
+   * token y la sesión queda iniciada.
+   */
+  async validateOtp(userId: string, otp: string): Promise<ConfirmOtpResponse> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ConfirmOtpResponse>(
+          `${environment.apiUrl}${ENDPOINTS.users.otpValidate}`,
+          { user_id: userId, otp },
+          { withCredentials: true },
+        ),
+      );
+      if (response.is_successful && response.token) {
+        this.persistSession(response.token, response.refresh_token, response.user_id);
+        this._pendingOtpUserId.set(null);
+        sessionStorage.removeItem(PENDING_OTP_KEY);
+      }
+      return response;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Guarda token, refresh, user_id y user_name (del JWT) en memoria y sessionStorage. */
+  private persistSession(token: string, refreshToken: string | null, userId: string | null): void {
+    this._token.set(token);
+    sessionStorage.setItem(TOKEN_KEY, token);
+    if (userId) {
+      this._userId.set(userId);
+      sessionStorage.setItem(USER_ID_KEY, userId);
+    }
+    if (refreshToken) {
+      this._refreshToken.set(refreshToken);
+      sessionStorage.setItem(REFRESH_KEY, refreshToken);
+    }
+    const decoded = this.jwtService.decode(token);
+    if (decoded?.userName) {
+      this._userName.set(decoded.userName);
+      sessionStorage.setItem(USERNAME_KEY, decoded.userName);
+    }
+  }
+
+  /** Ruta de inicio según el rol (para redirigir tras autenticarse). */
+  homeRoute(): string {
+    switch (this.role()) {
+      case 'admin':
+        return '/admin';
+      case 'teacher':
+        return '/teacher';
+      case 'student':
+        return '/student';
+      default:
+        return '/';
     }
   }
 
@@ -125,10 +185,12 @@ export class AuthService {
     this._userId.set(null);
     this._refreshToken.set(null);
     this._userName.set(null);
+    this._pendingOtpUserId.set(null);
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_ID_KEY);
     sessionStorage.removeItem(REFRESH_KEY);
     sessionStorage.removeItem(USERNAME_KEY);
+    sessionStorage.removeItem(PENDING_OTP_KEY);
     this.clearAllCookies();
     this.router.navigate(['/login']);
   }
@@ -147,7 +209,7 @@ export class AuthService {
     }
     try {
       const response = await firstValueFrom(
-        this.http.post<LoginResponse>(
+        this.http.post<RefreshResponse>(
           `${environment.apiUrl}${ENDPOINTS.users.refreshSession}`,
           {},
           {

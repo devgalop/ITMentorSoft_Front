@@ -16,6 +16,14 @@ describe('LoginComponent', () => {
     info: ReturnType<typeof vi.fn>;
   };
 
+  const SUCCESS = {
+    is_successful: true,
+    user_id: 'u1',
+    is_temporarily_blocked: false,
+    blocked_until: 0,
+    is_definitively_blocked: false,
+  };
+
   beforeEach(() => {
     authServiceMock = { login: vi.fn(), role: vi.fn().mockReturnValue(null) };
     routerMock = { navigate: vi.fn() };
@@ -76,7 +84,7 @@ describe('LoginComponent', () => {
   });
 
   it('on successful login, calls AuthService.login()', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
+    authServiceMock.login.mockResolvedValue(SUCCESS);
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password123',
@@ -90,9 +98,8 @@ describe('LoginComponent', () => {
     });
   });
 
-  it('on successful login, redirects to role-specific route', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('student');
+  it('on successful login (step 1), navigates to /otp for the code', async () => {
+    authServiceMock.login.mockResolvedValue(SUCCESS);
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password123',
@@ -100,46 +107,39 @@ describe('LoginComponent', () => {
 
     await component.onSubmit();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/student']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/otp']);
   });
 
-  it('on successful login with admin role, redirects to /admin', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('admin');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password123',
+  it('does not navigate to /otp when the account is temporarily blocked', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: 'u1',
+      is_temporarily_blocked: true,
+      blocked_until: 999,
+      is_definitively_blocked: false,
     });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
 
     await component.onSubmit();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/admin']);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalled();
   });
 
-  it('on successful login with teacher role, redirects to /teacher', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('teacher');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password123',
+  it('does not navigate when the account is definitively blocked', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: 'u1',
+      is_temporarily_blocked: false,
+      blocked_until: 0,
+      is_definitively_blocked: true,
     });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
 
     await component.onSubmit();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/teacher']);
-  });
-
-  it('on successful login with unknown role, redirects to /', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('user');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password123',
-    });
-
-    await component.onSubmit();
-
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalled();
   });
 
   it('on 401 error, shows an error toast', async () => {
@@ -167,7 +167,7 @@ describe('LoginComponent', () => {
   });
 
   it('on successful login, resets loading state', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
+    authServiceMock.login.mockResolvedValue(SUCCESS);
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password123',

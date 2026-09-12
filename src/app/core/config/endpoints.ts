@@ -50,6 +50,7 @@ export const ENDPOINTS = {
     recoveryPassword: '/users/recovery-password',
     changePassword: '/users/change-password',
     sessions: '/users/sessions',
+    otpValidate: '/users/otp/validate',
     refreshSession: '/users/sessions/refresh',
     connectedTotal: '/users/connected/total',
   },
